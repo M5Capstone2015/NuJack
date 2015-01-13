@@ -291,6 +291,7 @@ public class AudioReceiver {
 	}
 	
 	public void startAudioIO() {
+
 		if (!_isInitialized) {
 			initialize();
 		}
@@ -305,30 +306,30 @@ public class AudioReceiver {
 		
 		_audioRecord.startRecording();
 		
-		//_audioTrack.play();
+		_inputThread = new Thread(_inputProcessor);
+		//_inputThread.start(); // disabled for debuging....
 		
-		//_outputThread = new Thread(_outputGenerator);
-		//_inputThread = new Thread(_inputProcessor);
-		
-		//_outputThread.start();
-		
-		// Commenting this out for now just to test this class.
-		fakeAudioRead();
-		//_inputThread.start();
+		// DEBUG 
+		fakeAudioRead(); // Commentiig this out for now just to test this class.
+		// DEBUG
+
 	}
 	
+	//
+	// DEBUG 
+	//
 	private void fakeAudioRead()
 	{
-		//System.out.println("test");
-		//while (!_stop) {
-    			//int shortsRead = _audioRecord.read(_recBuffer, 0, _recBuffer.length);
-				_recBuffer = _audioRecord.read();
-				System.out.println("data size: " + _recBuffer.length);
-				processInputBuffer(_recBuffer.length);
-		//System.out.println("test");
-    	//}
+		_recBuffer = _audioRecord.read();
+		System.out.println("data size: " + _recBuffer.length);
+		processInputBuffer(_recBuffer.length);
 	}
 	
+
+
+	//
+	// DEBUG
+	//
 	public void printSink()
 	{
 		FakeSink fs = (FakeSink) _sink;
@@ -361,11 +362,14 @@ public class AudioReceiver {
 		// that scheduling doesn't mess it up.
 		_stereoBuffer = new short[bufferSize * _bitsInBuffer];
 
+		// COUMMENTED OUT FOR DEBUGGING
 		/*
 		_audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 
-				_sampleFrequency, AudioFormat.CHANNEL_OUT_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT, 44100,
-                AudioTrack.MODE_STREAM);     
+					     _sampleFrequency, 
+					     AudioFormat.CHANNEL_OUT_STEREO,
+                			     AudioFormat.ENCODING_PCM_16BIT, 
+					     44100,
+                			     AudioTrack.MODE_STREAM);     
 		*/
 
 		int recBufferSize = 5;

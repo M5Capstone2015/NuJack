@@ -8,6 +8,8 @@ public class SerialDecoder {
 	
 	private enum TransmitState { IDLE, PENDING, DATA };
 	private enum ReceiveState { IDLE, DATA, DATANEXT };
+    
+    private Byte _b;
 	
 	// Receiver State
 	private int _lastEdgeLength = 0;
@@ -55,6 +57,11 @@ public class SerialDecoder {
 	private boolean transmitIdle() {
 		return _txBitPosition == 1;
 	}
+    
+    private boolean fakeMethod()
+    {
+        _b.value = 5f;
+    }
 	
 	private boolean transmitPending() {
 		if (_txBitPosition == 0) {
