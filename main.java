@@ -23,6 +23,8 @@ class main
 		decoder.start();
 		decoder.print();
 		*/
+
+		AmpReader amd = new AmpReader();
 		
 		Decoder dec = new Decoder();
 		dec.start();
