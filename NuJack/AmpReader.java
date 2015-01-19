@@ -34,16 +34,17 @@ public class AmpReader {
 	private boolean _isRunning = false;
 	private boolean _stop = false;
 	
-	// NEW //
+	//----- NEW -----//
 	private final int ThresholdAmplitude = 3000;
 	private final int BaudRate = 120; // Arbitrary ATM
 	private int _count = 0; // Where we are in this Bit 
+	private int _zeroCount = 0; 
 	private float _mean = 0;
 	private float _sum = 0;
 	private State _state = State.IDLE;
 
 	private enum State {IDLE, ACTIVE};
-	//    //
+	//---------------//
 
 
     	Runnable _inputProcessor = new Runnable() {
@@ -67,28 +68,51 @@ public class AmpReader {
 			_sum += _recBuffer[i]; // Calc new sum
 			_mean = _sum / _count; // Calc new mean
 
-			if (_count < ThresholdAmplitude) // This "block" is done reading.
+			if (_count < BaudRate) // This "clock-pulse" is done reading.
 			{
 				// if IDLE
-				//	if ONE
-				//		Move to ACTIVE
-				// else 
-				// 	if _mean > Thresh
-				// 		Push ONE
-				// 	else
-				// 		Push ZERO
-				// 	_count = 0; // Reset everything
-				// 	_mean = 0;
-				// 	_sum = 0;
+				boolean isOne = IsOne();
+				if (_state == State.IDLE && isOne)
+					_state = State.ACTIVE;
+				else
+				{
+					boolean res = false;
+					//
+					// Three resp. from framer:
+					// 1) Continue -> keep going
+					// 2) Bad header or footer -> Do we want to go to IDLE here?
+					// 				there will be more Data coming in.
+					// 				Maybe just continue. If framer is like
+					// 				a stack this shouldn't throw off position.
+					// 				So more or less 2 & 3 are the same.
+					// 3) Done -> Set to IDLE
+					if (isOne)
+					{
+						// Push ONE
+						// res = _sink.handleNextBit(Bit.One);
+						_zeroCount = 0;
+					}
+					else
+					{
+						// Push Zero
+						// res = _sink.handleNextBit(Bit.Zero);
+						_zeroCount++;
+					}
+					if (res || _zeroCount > 8) // Reset to IDLE
+						_state = State.IDLE;
+				}
+				 _count = 0; // Reset everything
+				 _mean = 0;
+				 _sum = 0;
 			}
 		}
-
-		/*
-		if (_mean > ThresholdAmplitude)
-		{
-		}
-		*/
     	}
+
+	private boolean IsOne()
+	{
+		//return _mean > ThresholdAmplitude + ThreshRange && _mean < ThresholdAmplitude - ThreshRange;
+		return _mean > ThresholdAmplitude;
+	}
 	
 	public int getPowerFrequency() {
 		return _powerFrequency;
@@ -216,10 +240,6 @@ public class AmpReader {
 		_recBuffer = null;
 	}
 	
-    private double boundToShort(double in) {
-        return (in >= 32786.0) ? 32786.0 : (in <= -32786.0 ? -32786.0 : in );
-    }
-    
     private int getBufferSize() {
     	return _sampleFrequency / _ioBaseFrequency / 2;
     }
