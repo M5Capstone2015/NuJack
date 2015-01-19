@@ -61,12 +61,22 @@ public class AmpReader {
 
     	private void processInputBuffer(int shortsRead)
     	{
+		//
+		// TODO: If IDLE, we should be continually checking if we have received a one of correct length.
+		// 	 Currently we are just checking if this _count delimited set is a zero. Need to continually
+		// 	 update the average for the current frame.
+		//
 
 	    	for (int i=0; i < shortsRead; i++)
 		{
+			// if ACTIVE
 			_count++; // Increment the count corresponding to the current mean
 			_sum += _recBuffer[i]; // Calc new sum
 			_mean = _sum / _count; // Calc new mean
+			// else if IDLE
+			// 	Decrm. sum by oldest (shit. need a stack of these.)
+			// 	re calc mean
+			// 	if IsOne set to ACTIVE
 
 			if (_count < BaudRate) // This "clock-pulse" is done reading.
 			{
