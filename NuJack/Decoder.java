@@ -12,7 +12,7 @@ public class Decoder
 	private AudioReceiver _audioReceiver;
 
 	private enum ReceiveState {IDLE, DATA, DATANEXT}; // TODO consider adding an IDLENEXT
-	private enum Freq {ZERO, ONE, TWO};
+	//public enum Freq {ZERO, ONE, TWO};
 
 	private ReceiveState _rxState = ReceiveState.IDLE;
 
@@ -75,6 +75,82 @@ public class Decoder
 			}
 		}
 	};
+	
+	/*************************************************************************
+	*************************************************************************/
+	
+	private enum State {IDLE, ACTIVE};
+	private State _state = State.IDLE;
+	private int _bitCount = 0;
+	
+	private Freq checkFreqNew()
+	{
+		return null;
+	}
+	
+	private IncomingSink _incomingSink2 = new IncomingSink() {
+		public void handleNextBit(int transistionPeriod, boolean isHighToLow)
+		{
+			dataStack.add(transistionPeriod); // Might as well add to updateAverage func.
+			updateAverage(transistionPeriod);
+			_count++;
+			
+			if (_count >= Constants.NumCoefficients)  // If we just added the last point...
+			{
+				Freq freq = checkFreqNew();  // Calculate the coefficient average				
+				
+				if (_state == State.IDLE  && freq == Freq.TWO)  // If we just received a 2 and were IDLE, set to active.
+				{
+					_state = State.ACTIVE;
+					_bitCount = 0;
+				}
+				else if (_state == State.ACTIVE)
+				{					
+					_bitCount++;			
+					
+					if (_bitCount < 8)  // Data Bit
+					{
+						_packet.pushDataBit(freq);
+					}
+					else if (_bitCount >= 8 && _bitCount < 10)  // Footer Bit
+					{
+						_packet.pushFooterBit(freq);
+						// nPack.pushFooterBit(freq);
+					}
+					else // Final Footer bit. Packet is done
+					{
+						_packet.pushFooterBit(freq);						
+						boolean success = nPack.Validate();  // This checks maybe parity and the footer.
+						// PUSH FULL DATA HERE
+					}							
+				}
+				else if (_state == State.ACTIVE && freq == Freq.TWO)
+				{
+					// Clear everything and start over.
+				}
+			}		
+		}
+	};
+	
+	private int _count = 0;
+	private int _sum = 0;
+	private float _movingAverage = 0.0f;
+	private List<Integer> dataStack = new ArrayList<>();
+	
+	private nPacket _packet = new nPacket();
+	
+	private void updateAverage(int newNum)
+	{		
+		int firstNum = dataStack.get(0); // Get first number in stack
+		_sum -= firstNum; // Subtract it from sum
+		_sum += newNum; // Add new tail to sum
+		_movingAverage = _sum / Constants.NumCoefficients; // Recalc average
+		dataStack.remove(0); // Remove first number from stack
+	}
+	
+	/*************************************************************************
+	*************************************************************************/
+	
 
 	private void receiveIdle(boolean currentEdgeHigh) {
 		if (currentEdgeHigh == true && _freq == Freq.TWO) 
